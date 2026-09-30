@@ -1,0 +1,5 @@
+analysis_name,input_file,group_description
+country,data/country.xlsx,Country
+source,data/source.xlsx,Source
+sequence_type,data/ST.xlsx,Sequence type
+collection_time,data/time.xlsx,Collection time
