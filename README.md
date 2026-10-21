@@ -1,96 +1,118 @@
-# Reproducible R analysis code
+# R scripts for *Staphylococcus pseudintermedius* genomic analyses
 
-This directory contains the R code used to compare antimicrobial-resistance gene
-counts among country, source/host, sequence-type, and collection-time groups. It
-also contains a separate reproducible row-sampling utility.
+## Contents
 
-## Directory structure
+- [Overview](#overview)
+- [Repository contents](#repository-contents)
+- [System requirements](#system-requirements)
+- [Installation guide](#installation-guide)
+- [Demo](#demo)
+- [Results](#results)
+- [License](#license)
+- [Citation](#citation)
+
+## Overview
+
+This repository contains the R scripts and input data used for the statistical comparisons shown in Fig. 3C–F and for random sampling of dog-source isolates used in the phylogenetic analysis shown in Fig. 5 and Supplementary Table 6.
+
+## Repository contents
 
 ```text
 .
 |-- R/
-|   `-- group_comparison.R          # Validated analysis functions
-|-- config/
-|   `-- analyses.csv                # Input and analysis mapping
+|   |-- dunn_country.R
+|   |-- dunn_sequence_type.R
+|   |-- dunn_source.R
+|   |-- dunn_time.R
+|   `-- sample_dog_isolates.R
 |-- data/
-|   `-- README.md                   # Required input-file specification
-|-- scripts/
-|   |-- run_group_comparison.R      # Run one group comparison
-|   `-- sample_excel_rows.R         # Reproducible random sampling
-|-- install_dependencies.R
-|-- run_all.R                       # Run all configured comparisons
+|   |-- country.xlsx
+|   |-- dog_source_isolates_n4489.xlsx
+|   |-- source.xlsx
+|   |-- ST.xlsx
+|   `-- time.xlsx
+|-- .gitignore
+|-- LICENSE
 `-- README.md
 ```
 
-## Software requirements
+The first two columns of each input file for the Dunn analyses contain the group label and resistance-gene count, respectively. `dog_source_isolates_n4489.xlsx` contains 4,489 dog-source isolates without a header row.
 
-- R (version 4.1 or later recommended)
-- R packages: `readxl`, `FSA`, and `writexl`
+## System requirements
 
-Packages are never installed automatically during an analysis. Install missing
-dependencies explicitly from the project directory:
+The scripts were tested on Windows 11 with:
 
-```sh
-Rscript install_dependencies.R
+- R 4.2.1
+- `readxl` 1.5.0
+- `FSA` 0.9.6
+- `writexl` 1.5.4
+
+No non-standard hardware is required. The scripts are intended to run on Windows, macOS, or Linux.
+
+## Installation guide
+
+Install the required packages from CRAN:
+
+```r
+install.packages(c("readxl", "FSA", "writexl"))
 ```
 
-## Input data
+Installing the required packages took approximately 40 seconds on the tested Windows 11 desktop, with R already installed. Internet access to CRAN is required.
 
-See `data/README.md`. For each comparison, the first Excel column contains the
-group label and the second contains the numeric gene count. Input locations and
-analysis names are defined in `config/analyses.csv`; paths are relative to this
-directory, so no user-specific absolute path is required.
+## Demo
 
-## Run all group comparisons
-
-From this directory, run:
+Run the following commands from the repository root:
 
 ```sh
-Rscript run_all.R
+Rscript R/dunn_time.R
+Rscript R/dunn_country.R
+Rscript R/dunn_sequence_type.R
+Rscript R/dunn_source.R
+Rscript R/sample_dog_isolates.R
 ```
 
-Each analysis is written to its own subdirectory under `results/`. The following
-files are created:
-
-- `group_summary.csv`: sample size, median, and first/third quartiles by group.
-- `kruskal_wallis.csv`: Kruskal-Wallis statistic, degrees of freedom, and P value.
-- `dunn_all_comparisons.csv`: all Dunn pairwise tests with raw and adjusted P values.
-- `dunn_significant_comparisons.csv`: comparisons with adjusted P < 0.05.
-- `analysis_report.txt`: concise human-readable analysis summary.
-- `session_info.txt`: R, platform, and package-version information.
-
-Dunn-test P values are adjusted using the Bonferroni method. Statistical decisions
-use the unrounded numeric values at alpha = 0.05. CSV files retain the underlying
-numeric precision rather than presentation-only rounded values.
-
-## Run one group comparison
+Each script uses the corresponding file in `data/` by default. A different input file can be supplied as the first command-line argument. The sampling script also accepts the output path, sample size, and random seed:
 
 ```sh
-Rscript scripts/run_group_comparison.R --input=data/country.xlsx --output=results/country --name=country
+Rscript R/sample_dog_isolates.R data/dog_source_isolates_n4489.xlsx results/dog_source_sample_n491.xlsx 491 12345
 ```
 
-Optional arguments are `--sheet=1`, `--alpha=0.05`, and
-`--adjustment=bonferroni`. Named Excel worksheets can also be supplied to
-`--sheet`.
+Typical runtimes on the tested Windows 11 desktop were:
 
-## Reproduce the row-sampling step
+| Script | Runtime (seconds) |
+| --- | ---: |
+| `dunn_time.R` | 0.36 |
+| `dunn_country.R` | 0.34 |
+| `dunn_sequence_type.R` | 0.27 |
+| `dunn_source.R` | 0.37 |
+| `sample_dog_isolates.R` | 0.82 |
 
-The original sampling analysis selected 491 rows without replacement from a
-headerless workbook using random seed 12345. Reproduce it with:
+The complete demo took approximately 4 seconds, including R startup time.
 
-```sh
-Rscript scripts/sample_excel_rows.R --input=data/dog_4489.xlsx --output=results/dog_sample_491.xlsx --n=491 --seed=12345 --col-names=false
-```
+## Results
 
-The script validates the requested sample size and writes a companion metadata
-CSV recording the input row count, sample size, random seed, and header setting.
+- `dunn_time.R`: Fig. 3C
+- `dunn_country.R`: Fig. 3D
+- `dunn_sequence_type.R`: Fig. 3E
+- `dunn_source.R`: Fig. 3F
+- `sample_dog_isolates.R`: dog-source isolate sampling for the phylogenetic analysis in Fig. 5 and Supplementary Table 6
 
-## Reproducibility notes
+The four comparison scripts print group-level descriptive statistics, the Kruskal–Wallis test, and Dunn pairwise comparisons with Bonferroni-adjusted P values. The sampling script uses a default random seed of 12345 and writes 491 sampled rows to `results/dog_source_sample_n491.xlsx`.
 
-- All paths are relative or supplied at the command line.
-- Analyses fail with an informative message when inputs or dependencies are absent.
-- Invalid/missing observations are reported and removed before testing.
-- A complete `sessionInfo()` record is saved for each group comparison.
-- Generated results and input workbooks are excluded by `.gitignore`; revise this
-  choice if the journal requires data and results in the same repository.
+Expected key output is:
 
+| Script | Expected result |
+| --- | --- |
+| `dunn_time.R` | Kruskal–Wallis H = 54.404090, df = 3, P = 9.2009201237e-12 |
+| `dunn_country.R` | Kruskal–Wallis H = 357.930890, df = 4, P = 3.4000388818e-76 |
+| `dunn_sequence_type.R` | Kruskal–Wallis H = 147.277867, df = 4, P = 7.7979957491e-31 |
+| `dunn_source.R` | Kruskal–Wallis H = 109.449110, df = 4, P = 9.5383716851e-23 |
+| `sample_dog_isolates.R` | 491 rows sampled from 4,489 rows using random seed 12345 |
+
+## License
+
+The R scripts are licensed under the GNU General Public License v3.0. See `LICENSE`.
+
+## Citation
+
+Please cite the associated manuscript and the archived repository release.
